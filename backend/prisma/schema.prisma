@@ -1,0 +1,168 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  username      String    @unique
+  password_hash String
+  user_role     String    // "admin", "mesa", "supervisor"
+  is_active     Boolean   @default(true)
+  created_at    DateTime  @default(now())
+  
+  records       Record[]
+  record_audits RecordAudit[]
+  role_weights  RoleWeight[]
+  context_weights ContextWeight[]
+  
+  @@map("users")
+}
+
+model Country {
+  id       Int    @id @default(autoincrement())
+  name     String @unique
+  iso_code String @unique
+  
+  records  Record[]
+  organ_countries OrganCountry[]
+  
+  @@map("countries")
+}
+
+model Organ {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  
+  records Record[]
+  organ_countries OrganCountry[]
+  models_organs ModelOrgan[]
+  
+  @@map("organs")
+}
+
+model Model {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  created_at DateTime @default(now())
+  
+  models_organs ModelOrgan[]
+  
+  @@map("models")
+}
+
+model ModelOrgan {
+  id       Int @id @default(autoincrement())
+  model_id Int
+  organ_id Int
+  
+  model Model @relation(fields: [model_id], references: [id], onDelete: Cascade)
+  organ Organ @relation(fields: [organ_id], references: [id], onDelete: Cascade)
+  
+  @@unique([model_id, organ_id])
+  @@map("models_organs")
+}
+
+model OrganCountry {
+  id         Int @id @default(autoincrement())
+  organ_id   Int
+  country_id Int
+  
+  organ   Organ   @relation(fields: [organ_id], references: [id], onDelete: Cascade)
+  country Country @relation(fields: [country_id], references: [id], onDelete: Cascade)
+  
+  @@unique([organ_id, country_id])
+  @@map("organs_countries")
+}
+
+model QualityScale {
+  id    Int    @id @default(autoincrement())
+  label String @unique
+  value Int    @unique
+  
+  records Record[]
+  
+  @@map("quality_scale")
+}
+
+model Context {
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  description String?
+  is_active   Boolean @default(true)
+  
+  records         Record[]
+  context_weights ContextWeight[]
+  
+  @@map("contexts")
+}
+
+model Record {
+  id                      Int      @id @default(autoincrement())
+  user_id                 Int
+  organ_id                Int
+  country_id              Int
+  context_id              Int?
+  quality_id              Int
+  role_weight_applied     Float
+  context_weight_applied  Float
+  quality_value           Int
+  final_score             Float
+  observations            String?
+  created_at              DateTime @default(now())
+  
+  user    User         @relation(fields: [user_id], references: [id])
+  organ   Organ        @relation(fields: [organ_id], references: [id])
+  country Country      @relation(fields: [country_id], references: [id])
+  context Context?     @relation(fields: [context_id], references: [id])
+  quality QualityScale @relation(fields: [quality_id], references: [id])
+  
+  record_audits RecordAudit[]
+  
+  @@map("records")
+}
+
+model RecordAudit {
+  id           Int      @id @default(autoincrement())
+  record_id    Int
+  action_made  String
+  performed_by Int
+  timestamp    DateTime @default(now())
+  
+  record Record @relation(fields: [record_id], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [performed_by], references: [id])
+  
+  @@map("record_audit")
+}
+
+model RoleWeight {
+  id         Int      @id @default(autoincrement())
+  user_role  String   @unique
+  weight     Float
+  valid_from DateTime @default(now())
+  valid_to   DateTime?
+  
+  users User[]
+  
+  @@map("role_weights")
+}
+
+model ContextWeight {
+  id         Int      @id @default(autoincrement())
+  context_id Int
+  weight     Float
+  valid_from DateTime @default(now())
+  valid_to   DateTime?
+  
+  context Context @relation(fields: [context_id], references: [id], onDelete: Cascade)
+  users   User[]
+  
+  @@map("context_weights")
+}
