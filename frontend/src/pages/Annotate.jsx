@@ -124,7 +124,6 @@ function Annotate({ user }) {
       'Haiti': '/flags/HT.png',
       'Israel': '/flags/IL.png',
       'Iran': '/flags/IR.png',
-      'India': '/flags/IN.png',
       'Kenia': '/flags/KE.png',
       'Libia': '/flags/LY.png',
       'Marruecos': '/flags/MA.png',
